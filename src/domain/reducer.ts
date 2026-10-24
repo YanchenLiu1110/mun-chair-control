@@ -128,6 +128,13 @@ export function reduce(state: SessionState, ev: SessionEvent): SessionState {
         ...state,
         meta: { ...state.meta, status: 'closed', closedAt: now },
         phase: 'closed',
+        // 休会后必须把三个计时器都停掉：否则大屏上会留着一个继续走的倒计时
+        floor: { ...state.floor, timer: pauseTimer(state.floor.timer, now) },
+        moderation: {
+          ...state.moderation,
+          timer: pauseTimer(state.moderation.timer, now),
+          totalTimer: pauseTimer(state.moderation.totalTimer, now),
+        },
       };
 
     case 'agenda/set':

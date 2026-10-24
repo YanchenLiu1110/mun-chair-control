@@ -63,6 +63,8 @@ interface SessionStore {
   startSession: () => Promise<void>;
   selectSession: (id: string) => Promise<void>;
   closeSession: () => Promise<void>;
+  /** 返回会期列表（不动数据，只是退出当前会期视图） */
+  backToPicker: () => Promise<void>;
   append: <K extends EventKind>(kind: K, payload: EventPayloads[K]) => Promise<void>;
   /** 开表决：顺手把当前出席人数写进快照，供 F4 出席率曲线使用 */
   openVote: (input: {
@@ -191,7 +193,23 @@ export const useSession = create<SessionStore>()((set, get) => ({
   },
 
   closeSession: async () => {
+    const { sessions, activeSessionId, committee } = get();
     await get().append('session/closed', {});
+    // 会期记录上补一个结束时间，会期列表据此显示「已结束」
+    if (!committee || !activeSessionId) return;
+    const nextSessions = sessions.map((s) =>
+      s.id === activeSessionId ? { ...s, endedAt: Date.now() } : s,
+    );
+    await persistWorkspace({ committee, sessions: nextSessions, activeSessionId });
+    set({ sessions: nextSessions });
+  },
+
+  /** 回到会期列表：清掉当前会期的内存状态，但事件已经落库，随时可以再打开 */
+  backToPicker: async () => {
+    const { committee, sessions } = get();
+    if (!committee) return;
+    await persistWorkspace({ committee, sessions, activeSessionId: null });
+    set({ activeSessionId: null, state: null, events: [] });
   },
 
   append: async (kind, payload) => {

@@ -2110,3 +2110,8 @@ select:focus {
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
+/* 投影视图 · 休会 */
+.proj-result.neutral {
+  color: var(--ink-2);
+}

@@ -84,13 +84,16 @@ export function ProjectionView() {
   const resultHold =
     !state.activeVote && lastVote?.closedAt != null && now - lastVote.closedAt < RESULT_HOLD_MS;
 
-  const mode: 'vote' | 'result' | 'caucus' | 'floor' = state.activeVote
-    ? 'vote'
-    : resultHold
-      ? 'result'
-      : state.moderation.kind
-        ? 'caucus'
-        : 'floor';
+  const mode: 'closed' | 'vote' | 'result' | 'caucus' | 'floor' =
+    state.phase === 'closed'
+      ? 'closed'
+      : state.activeVote
+        ? 'vote'
+        : resultHold
+          ? 'result'
+          : state.moderation.kind
+            ? 'caucus'
+            : 'floor';
 
   const presentCount = Object.values(state.attendance).filter((s) => s !== 'absent').length;
 
@@ -177,6 +180,20 @@ export function ProjectionView() {
       </header>
 
       <main className="proj-main">
+        {mode === 'closed' && (
+          <>
+            <div className="proj-kicker">Session Closed</div>
+            <div className="proj-result neutral">
+              休会
+              <small>ADJOURNED</small>
+            </div>
+            <div className="proj-sub">
+              {state.meta.label}
+              {state.agenda ? ` · ${state.agenda.topicZh}` : ''}
+            </div>
+          </>
+        )}
+
         {mode === 'vote' && vote && voteCounts && (
           <>
             <div className="proj-kicker">Voting · 表决</div>
@@ -300,7 +317,22 @@ export function ProjectionView() {
       </main>
 
       <footer className="proj-foot">
-        {mode === 'vote' || mode === 'result' ? (
+        {mode === 'closed' ? (
+          <>
+            <div>
+              <span className="k">Topic · 议题</span>
+              <span className="v">{state.agenda?.topicZh ?? '—'}</span>
+            </div>
+            <div>
+              <span className="k">Motions · 动议</span>
+              <span className="v num">{state.motions.length}</span>
+            </div>
+            <div>
+              <span className="k">Documents · 文件</span>
+              <span className="v num">{state.documents.length}</span>
+            </div>
+          </>
+        ) : mode === 'vote' || mode === 'result' ? (
           <>
             <div>
               <span className="k">Subject · 表决对象</span>

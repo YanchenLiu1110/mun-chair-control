@@ -40,6 +40,8 @@ export function ChairConsole() {
     undo,
     exportJson,
     startSession,
+    closeSession,
+    backToPicker,
     openVote,
     closeVote,
   } = useSession();
@@ -82,6 +84,18 @@ export function ChairConsole() {
     URL.revokeObjectURL(a.href);
   }, [exportJson]);
 
+  const handleClose = useCallback(async () => {
+    if (!window.confirm('宣布休会？本场次将标记为「已结束」，三个计时器会一起停掉。\n\n休会不是删除：之后仍可在会期列表里重新打开，也可以用「撤销」退回来。')) return;
+    await closeSession();
+  }, [closeSession]);
+
+  const handleBack = useCallback(async () => {
+    if (state && state.phase !== 'closed') {
+      if (!window.confirm('本场次还没有休会，确定返回会期列表？\n\n操作已实时保存，随时可以再打开继续。')) return;
+    }
+    await backToPicker();
+  }, [backToPicker, state]);
+
   if (!committee || !state || !quorum) return null;
 
   const session = sessions.find((s) => s.id === activeSessionId);
@@ -116,7 +130,18 @@ export function ChairConsole() {
         </button>
         <button onClick={() => setMinutesOpen(true)}>会议纪要</button>
         <button onClick={() => setPmOpen(true)}>会后复盘</button>
-        <button onClick={() => void startSession()}>新会期</button>
+        <button onClick={() => void handleBack()} title="回到会期列表（数据已自动保存）">
+          会期列表
+        </button>
+        {state.phase === 'closed' ? (
+          <button className="primary" onClick={() => void startSession()}>
+            新会期
+          </button>
+        ) : (
+          <button className="danger" onClick={() => void handleClose()} title="宣布休会，结束本场次">
+            休会
+          </button>
+        )}
         <button onClick={() => void handleExport()}>导出 JSON</button>
         <button
           className="danger"

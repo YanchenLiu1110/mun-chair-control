@@ -40,6 +40,13 @@ export function StagePanel({
   const remaining = remainingNow(timer, now);
   const speaker = floor.speakingId ? index.get(floor.speakingId) : null;
 
+  /**
+   * 休会后讲台必须彻底锁死。大屏此时只画「休会」一屏，
+   * 如果主席还能点「继续」，就会有一个谁看不见的时钟在后台跑，
+   * 而且再点「休会」也停不掉它 —— 只能靠撤销。
+   */
+  const closed = state.phase === 'closed';
+
   /* ---- 提示音：只在跨越阈值的瞬间响一次 ---- */
   const prevRef = useRef(remaining);
   useEffect(() => {
@@ -91,7 +98,7 @@ export function StagePanel({
     return '评论';
   })();
 
-  const canYield = Boolean(floor.speakingId) && !floor.yieldUsed;
+  const canYield = Boolean(floor.speakingId) && !floor.yieldUsed && !closed;
 
   return (
     <section className="panel">
@@ -99,14 +106,16 @@ export function StagePanel({
         <h2>讲台</h2>
         <span className="en">Floor</span>
         <span className="spacer" />
-        <span className={`pill ${timer.status === 'running' ? 'ok' : ''}`}>
-          {timer.status === 'running'
-            ? '计时中'
-            : timer.status === 'paused'
-              ? '已暂停'
-              : timer.status === 'expired'
-                ? '已归零'
-                : '待开始'}
+        <span className={`pill ${timer.status === 'running' && !closed ? 'ok' : ''}`}>
+          {closed
+            ? '已休会'
+            : timer.status === 'running'
+              ? '计时中'
+              : timer.status === 'paused'
+                ? '已暂停'
+                : timer.status === 'expired'
+                  ? '已归零'
+                  : '待开始'}
         </span>
       </div>
 
@@ -143,15 +152,19 @@ export function StagePanel({
         </div>
 
         <div className="stage-controls">
-          <button className="primary" onClick={handlePrimary}>
+          <button className="primary" onClick={handlePrimary} disabled={closed}>
             {primaryLabel}
           </button>
-          <button onClick={onReset} disabled={timer.status === 'idle'}>
+          <button onClick={onReset} disabled={closed || timer.status === 'idle'}>
             重置
           </button>
-          <button onClick={() => onExtend(15)}>+15s</button>
-          <button onClick={() => onExtend(30)}>+30s</button>
-          <button onClick={onExpire} disabled={timer.status !== 'running'}>
+          <button onClick={() => onExtend(15)} disabled={closed}>
+            +15s
+          </button>
+          <button onClick={() => onExtend(30)} disabled={closed}>
+            +30s
+          </button>
+          <button onClick={onExpire} disabled={closed || timer.status !== 'running'}>
             结束
           </button>
         </div>
@@ -216,7 +229,7 @@ export function StagePanel({
               max={1200}
               value={sec}
               onChange={(e) => setSec(Math.max(10, Number(e.target.value) || 10))}
-              disabled={timer.status === 'running'}
+              disabled={closed || timer.status === 'running'}
             />
             <span style={{ fontSize: 11, color: 'var(--ink-3)' }}>秒</span>
             <span style={{ flex: 1 }} />

@@ -109,11 +109,17 @@ export function SessionPicker() {
               >
                 <span className="flag">📄</span>
                 <span className="name">{s.label}</span>
+                <span className={`pill ${s.endedAt ? '' : 'ok'}`}>
+                  {s.endedAt ? '已结束' : '进行中'}
+                </span>
                 <span style={{ fontSize: 11, color: 'var(--ink-3)' }}>
                   {new Date(s.startedAt).toLocaleString('zh-CN')}
                 </span>
               </div>
             ))}
+            <div className="hint" style={{ marginTop: 8 }}>
+              点任一会期可以重新打开继续操作；已休会的场次也能打开查看或补记录。
+            </div>
           </div>
         )}
 
