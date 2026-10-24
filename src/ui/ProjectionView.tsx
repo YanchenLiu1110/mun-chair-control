@@ -47,10 +47,17 @@ export function ProjectionView() {
   const now = useNow(200);
 
   useEffect(() => {
-    const unsub = subscribe((p) => {
-      setPayload(p);
-      setLastAt(Date.now());
-    });
+    const unsub = subscribe(
+      (p) => {
+        setPayload(p);
+        setLastAt(Date.now());
+      },
+      () => {
+        // 主席那边重置了系统：大屏回到等待页，别留着上一场的最后一帧
+        setPayload(null);
+        setLastAt(0);
+      },
+    );
     requestSync();
     const poll = window.setInterval(requestSync, 2500);
     return () => {

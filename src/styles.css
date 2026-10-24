@@ -317,6 +317,43 @@ select:focus {
   padding: 0 3px;
 }
 
+/* ---- 会期列表 ---- */
+/* 整行点击 = 打开该会期；右侧「删除」是独立动作，必须 stopPropagation */
+.sess-row {
+  cursor: pointer;
+  padding: 7px 10px;
+  border-bottom: 1px solid var(--line);
+}
+.sess-row .name {
+  font-size: 13px;
+}
+.sess-time {
+  font-size: 11px;
+  color: var(--ink-3);
+  white-space: nowrap;
+}
+.sess-del {
+  flex-shrink: 0;
+  color: var(--ink-2);
+  border-color: var(--line);
+}
+.sess-del:hover:not(:disabled) {
+  color: var(--danger);
+  border-color: #f3c6c2;
+  background: var(--danger-soft);
+}
+
+/* ---- 重置区：和上面的正常操作拉开距离，避免误点 ---- */
+.reset-zone {
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px dashed var(--line);
+}
+.reset-zone button {
+  width: 100%;
+  font-size: 11.5px;
+}
+
 .seg {
   display: inline-flex;
   border: 1px solid var(--line-strong);

@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { seedDelegations } from '../domain/delegations';
 import { RULESETS } from '../domain/rulesets';
-import type { Delegation } from '../domain/types';
+import type { Delegation, Session } from '../domain/types';
+import { countSessionEvents } from '../store/db';
 import { useSession } from '../store/sessionStore';
 import { RosterEditor } from './RosterEditor';
 
@@ -83,12 +84,40 @@ export function SetupScreen() {
 
 /** 已有委员会但未进入场次：选会期 */
 export function SessionPicker() {
-  const { committee, sessions, startSession, selectSession, updateRoster, resetAll } = useSession();
+  const { committee, sessions, startSession, selectSession, deleteSession, updateRoster, resetAll } =
+    useSession();
   const [rosterOpen, setRosterOpen] = useState(false);
   const [draft, setDraft] = useState<Delegation[]>([]);
   if (!committee) return null;
 
   const locked = sessions.length > 0;
+  // 和 store 里 startSession 用同一套算法，否则删过会期之后按钮上的序号会对不上
+  const nextOrdinal = sessions.reduce((max, s) => Math.max(max, s.ordinal), 0) + 1;
+
+  /** 永久删除：先数一下要扔掉多少条记录，再让主席确认 */
+  const handleDelete = async (s: Session) => {
+    const n = await countSessionEvents(s.id);
+    const ok = window.confirm(
+      `永久删除「${s.label}」？\n\n` +
+        `这场会议的 ${n} 条操作记录会从本机彻底抹掉，撤销也回不来。\n\n` +
+        `只是想结束这场会、以后还要翻记录的话，请在主席台点「休会」，不要删。`,
+    );
+    if (ok) await deleteSession(s.id);
+  };
+
+  /** 重置系统：不可逆，所以问两遍 */
+  const handleReset = () => {
+    if (
+      !window.confirm(
+        '重置系统？\n\n' +
+          '委员会、名册、所有会期与全部操作记录都会从这台电脑上清空，' +
+          '话术库和阵营权重也会恢复默认。',
+      )
+    )
+      return;
+    if (!window.confirm('再确认一次：重置之后无法恢复，也没有备份。确定吗？')) return;
+    void resetAll();
+  };
 
   return (
     <div className="setup">
@@ -103,8 +132,7 @@ export function SessionPicker() {
             {sessions.map((s) => (
               <div
                 key={s.id}
-                className="rc-row"
-                style={{ cursor: 'pointer', borderBottom: '1px solid var(--line)' }}
+                className="rc-row sess-row"
                 onClick={() => void selectSession(s.id)}
               >
                 <span className="flag">📄</span>
@@ -112,9 +140,17 @@ export function SessionPicker() {
                 <span className={`pill ${s.endedAt ? '' : 'ok'}`}>
                   {s.endedAt ? '已结束' : '进行中'}
                 </span>
-                <span style={{ fontSize: 11, color: 'var(--ink-3)' }}>
-                  {new Date(s.startedAt).toLocaleString('zh-CN')}
-                </span>
+                <span className="sess-time">{new Date(s.startedAt).toLocaleString('zh-CN')}</span>
+                <button
+                  className="sm ghost sess-del"
+                  title="永久删除这个会期及其全部记录"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    void handleDelete(s);
+                  }}
+                >
+                  删除
+                </button>
               </div>
             ))}
             <div className="hint" style={{ marginTop: 8 }}>
@@ -128,7 +164,7 @@ export function SessionPicker() {
           style={{ width: '100%', padding: '9px 0' }}
           onClick={() => void startSession()}
         >
-          开始第 {sessions.length + 1} 会期
+          开始第 {nextOrdinal} 会期
         </button>
 
         {rosterOpen ? (
@@ -173,15 +209,14 @@ export function SessionPicker() {
           </button>
         )}
 
-        <button
-          className="ghost"
-          style={{ width: '100%', marginTop: 10, fontSize: 11 }}
-          onClick={() => {
-            if (window.confirm('确定清空本机全部会议数据？此操作不可恢复。')) void resetAll();
-          }}
-        >
-          清空全部数据
-        </button>
+        <div className="reset-zone">
+          <button className="ghost danger" onClick={handleReset}>
+            重置系统（清空全部数据）
+          </button>
+          <div className="hint" style={{ marginTop: 6 }}>
+            只清本机浏览器里的数据，不会影响别处；重置后回到初始设置页。
+          </div>
+        </div>
       </div>
     </div>
   );

@@ -17,6 +17,7 @@ export interface SyncPayload {
 
 type Msg =
   | { type: 'state'; payload: SyncPayload }
+  | { type: 'reset' }
   | { type: 'hello' };
 
 let channel: BroadcastChannel | null = null;
@@ -31,11 +32,21 @@ export function publish(payload: SyncPayload): void {
   getChannel()?.postMessage({ type: 'state', payload } satisfies Msg);
 }
 
-export function subscribe(cb: (p: SyncPayload) => void): () => void {
+/**
+ * 系统重置时广播一次，让大屏回到「等待主席台连接」。
+ * 不广播的话，大屏会一直挂着上一场会议的最后一帧（通常是休会屏），
+ * 主席在本地已经清空、台上却还写着「第一会期」，看起来就像重置没生效。
+ */
+export function publishReset(): void {
+  getChannel()?.postMessage({ type: 'reset' } satisfies Msg);
+}
+
+export function subscribe(cb: (p: SyncPayload) => void, onReset?: () => void): () => void {
   const ch = getChannel();
   if (!ch) return () => {};
   const handler = (e: MessageEvent<Msg>) => {
     if (e.data?.type === 'state') cb(e.data.payload);
+    else if (e.data?.type === 'reset') onReset?.();
   };
   ch.addEventListener('message', handler);
   return () => ch.removeEventListener('message', handler);

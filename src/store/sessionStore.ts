@@ -6,8 +6,17 @@ import { createInitialState, reduce, replay } from '../domain/reducer';
 import { getRuleset } from '../domain/rulesets';
 import type { Committee, Delegation, Session, SessionMeta, SessionState, VoteMode } from '../domain/types';
 import { tallyVote } from '../domain/voting';
-import { clearAll, deleteLastEvents, kvGet, kvSet, loadAllEvents, loadEvents, putEvents } from './db';
-import { onPeerHello, publish } from './sync';
+import {
+  clearAll,
+  deleteLastEvents,
+  deleteSessionEvents,
+  kvGet,
+  kvSet,
+  loadAllEvents,
+  loadEvents,
+  putEvents,
+} from './db';
+import { onPeerHello, publish, publishReset } from './sync';
 
 const KV_WORKSPACE = 'workspace/v1';
 
@@ -65,6 +74,8 @@ interface SessionStore {
   closeSession: () => Promise<void>;
   /** 返回会期列表（不动数据，只是退出当前会期视图） */
   backToPicker: () => Promise<void>;
+  /** 永久删除一个会期：事件流直接从库里抹掉，不进撤销栈 */
+  deleteSession: (id: string) => Promise<void>;
   append: <K extends EventKind>(kind: K, payload: EventPayloads[K]) => Promise<void>;
   /** 开表决：顺手把当前出席人数写进快照，供 F4 出席率曲线使用 */
   openVote: (input: {
@@ -82,6 +93,23 @@ interface SessionStore {
 
 function persistWorkspace(w: Workspace): Promise<unknown> {
   return kvSet(KV_WORKSPACE, w);
+}
+
+/**
+ * 清掉本应用写在 localStorage 里的偏好（话术库、阵营权重、雷达排序）。
+ * 只按前缀删，不碰同一个域下别人的键。
+ */
+function clearLocalPrefs(): void {
+  try {
+    const keys: string[] = [];
+    for (let i = 0; i < localStorage.length; i += 1) {
+      const k = localStorage.key(i);
+      if (k && k.startsWith('mun-chair/')) keys.push(k);
+    }
+    for (const k of keys) localStorage.removeItem(k);
+  } catch {
+    /* 隐私模式下 localStorage 可能直接抛错，重置不该因此中断 */
+  }
 }
 
 export const useSession = create<SessionStore>()((set, get) => ({
@@ -160,7 +188,9 @@ export const useSession = create<SessionStore>()((set, get) => ({
   startSession: async () => {
     const { committee, sessions } = get();
     if (!committee) return;
-    const ordinal = sessions.length + 1;
+    // 用「已有最大序号 + 1」而不是 length + 1：删掉中间某个会期之后，
+    // length 会退回去，直接加一会造出「第二会期」重名。
+    const ordinal = sessions.reduce((max, s) => Math.max(max, s.ordinal), 0) + 1;
     const session: Session = {
       id: `s-${Date.now()}`,
       committeeId: committee.id,
@@ -210,6 +240,33 @@ export const useSession = create<SessionStore>()((set, get) => ({
     if (!committee) return;
     await persistWorkspace({ committee, sessions, activeSessionId: null });
     set({ activeSessionId: null, state: null, events: [] });
+  },
+
+  /**
+   * 永久删除一个会期。和「休会」是两回事：
+   * 休会只是标记结束、记录留着；删除是把这场的事件流从库里抹掉，撤销也回不来。
+   */
+  deleteSession: async (id) => {
+    const { committee, sessions, activeSessionId } = get();
+    if (!committee) return;
+    if (!sessions.some((s) => s.id === id)) return;
+
+    await deleteSessionEvents(id);
+    const nextSessions = sessions.filter((s) => s.id !== id);
+    const wasActive = activeSessionId === id;
+    await persistWorkspace({
+      committee,
+      sessions: nextSessions,
+      activeSessionId: wasActive ? null : activeSessionId,
+    });
+
+    if (wasActive) {
+      set({ sessions: nextSessions, activeSessionId: null, state: null, events: [] });
+      // 大屏不能停在被删掉的那一帧上
+      publishReset();
+    } else {
+      set({ sessions: nextSessions });
+    }
   },
 
   append: async (kind, payload) => {
@@ -291,6 +348,10 @@ export const useSession = create<SessionStore>()((set, get) => ({
 
   resetAll: async () => {
     await clearAll();
+    // 只清 IndexedDB 是不够的：话术库、阵营权重、雷达排序都在 localStorage，
+    // 不一起清掉就会出现「重置完还是上次那套参数」的怪现象。
+    clearLocalPrefs();
+    publishReset();
     set({ committee: null, sessions: [], activeSessionId: null, state: null, events: [] });
   },
 }));

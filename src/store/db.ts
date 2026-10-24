@@ -111,6 +111,26 @@ export function deleteLastEvents(sessionId: string, count: number): Promise<void
   );
 }
 
+/** 永久删除一个会期的全部事件。和撤销不同，这是不可逆的。 */
+export function deleteSessionEvents(sessionId: string): Promise<void> {
+  return openDb().then(
+    (db) =>
+      new Promise<void>((resolve, reject) => {
+        const t = db.transaction(STORE_EVENTS, 'readwrite');
+        t.objectStore(STORE_EVENTS).delete(sessionRange(sessionId));
+        t.oncomplete = () => resolve();
+        t.onerror = () => reject(t.error);
+      }),
+  );
+}
+
+/** 会期事件条数，删除前用来告诉主席「要扔掉多少条记录」 */
+export function countSessionEvents(sessionId: string): Promise<number> {
+  return tx<number>(STORE_EVENTS, 'readonly', (s) =>
+    s.count(sessionRange(sessionId)) as IDBRequest<number>,
+  );
+}
+
 export function clearAll(): Promise<void> {
   return openDb().then(
     (db) =>
