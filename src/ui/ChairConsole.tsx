@@ -203,6 +203,7 @@ export function ChairConsole() {
               index={index}
               delegations={committee.delegations}
               ruleset={ruleset}
+              quorum={quorum}
               onStart={(durationSec) =>
                 void append('timer/start', { durationSec, speakerId: state.floor.speakingId })
               }

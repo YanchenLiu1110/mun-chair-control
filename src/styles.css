@@ -178,15 +178,21 @@ select:focus {
 .console {
   flex: 1;
   display: grid;
-  grid-template-columns: 300px minmax(0, 1fr) 330px 262px;
+  grid-template-columns: 280px minmax(0, 1.25fr) 400px 250px;
   gap: 12px;
   padding: 12px;
   min-height: 0;
   overflow: hidden;
+  align-items: stretch;
 }
-@media (max-width: 1500px) {
+@media (max-width: 1600px) {
   .console {
-    grid-template-columns: 286px minmax(0, 1fr) 320px;
+    grid-template-columns: 264px minmax(0, 1fr) 372px 230px;
+  }
+}
+@media (max-width: 1400px) {
+  .console {
+    grid-template-columns: 250px minmax(0, 1fr) 344px;
   }
   .radar {
     display: none;
@@ -398,6 +404,92 @@ select:focus {
   min-height: 0;
 }
 
+/* 讲台分栏：左侧大时钟，右侧上下文信息，消除中间留白 */
+.stage-split {
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+.stage-main {
+  flex: 1 1 320px;
+  min-width: 280px;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.stage-context {
+  flex: 0 0 210px;
+  width: 210px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  overflow-y: auto;
+  padding-right: 2px;
+}
+.ctx-card {
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  padding: 9px 11px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.ctx-card.ok {
+  background: var(--ok-soft);
+  border-color: #a6e0c0;
+}
+.ctx-card.bad {
+  background: var(--danger-soft);
+  border-color: #f3c6c2;
+}
+.ctx-k {
+  font-size: 10px;
+  letter-spacing: 0.4px;
+  color: var(--ink-3);
+  text-transform: uppercase;
+}
+.ctx-v {
+  font-size: 19px;
+  font-weight: 650;
+  line-height: 1.2;
+  color: var(--ink);
+}
+.ctx-v.sm {
+  font-size: 26px;
+}
+.ctx-v.ok,
+.ctx-card.ok .ctx-v {
+  color: var(--ok);
+}
+.ctx-v.bad,
+.ctx-card.bad .ctx-v {
+  color: var(--danger);
+}
+.ctx-meta {
+  font-size: 11px;
+  color: var(--ink-2);
+  font-variant-numeric: tabular-nums;
+}
+.ctx-meta.topic {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--accent);
+}
+.ctx-meta.muted {
+  color: var(--ink-3);
+}
+.ctx-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.ctx-grid .ctx-card {
+  align-items: center;
+  text-align: center;
+}
+
 .stage-top {
   padding: 16px 20px 8px;
   text-align: center;
@@ -508,10 +600,10 @@ select:focus {
 }
 
 .stage-foot {
+  flex: 0 0 100%;
   border-top: 1px solid var(--line);
   background: var(--panel-2);
   padding: 10px 16px 12px;
-  flex: 0 0 auto;
 }
 
 .yield-row {
