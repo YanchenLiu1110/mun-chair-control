@@ -133,59 +133,39 @@ export function StagePanel({
         </span>
       </div>
 
-      <div className="stage stage-split">
-        <div className="stage-main">
-          <div className="stage-top">
-            <div className="stage-kicker">Current Speaker · 当前发言</div>
-            <div className="stage-speaker">
-              {speaker ? (
-                <>
-                  <span className="flag">{speaker.flag}</span>
-                  <div>
-                    <div className="nm">{speaker.shortZh}</div>
-                    <div className="nm-en">{speaker.nameEn}</div>
-                  </div>
-                </>
-              ) : (
-                <span className="stage-empty">尚无发言代表</span>
-              )}
-            </div>
-          </div>
-
-          <div className="clock-wrap">
-            <div className={`clock num ${clockClass}`}>{formatClock(remaining)}</div>
-            <div className="clock-sub">
-              {timer.extendedMs > 0 && `已加时 ${Math.round(timer.extendedMs / 1000)}s · `}
-              本轮 {Math.round(timer.durationMs / 1000)}s
-              {timer.status === 'running' && remaining > 0 && remaining <= warnMs
-                ? ` · 剩余不足 ${ruleset.warningSec} 秒`
-                : ''}
-            </div>
-            <div className="bar">
-              <i className={barClass} style={{ width: `${Math.min(100, Math.max(0, ratio * 100))}%` }} />
-            </div>
-          </div>
-
-          <div className="stage-controls">
-            <button className="primary" onClick={handlePrimary} disabled={closed}>
-              {primaryLabel}
-            </button>
-            <button onClick={onReset} disabled={closed || timer.status === 'idle'}>
-              重置
-            </button>
-            <button onClick={() => onExtend(15)} disabled={closed}>
-              +15s
-            </button>
-            <button onClick={() => onExtend(30)} disabled={closed}>
-              +30s
-            </button>
-            <button onClick={onExpire} disabled={closed || timer.status !== 'running'}>
-              结束
-            </button>
+      <div className="stage">
+        <div className="stage-top">
+          <div className="stage-kicker">Current Speaker · 当前发言</div>
+          <div className="stage-speaker">
+            {speaker ? (
+              <>
+                <span className="flag">{speaker.flag}</span>
+                <div>
+                  <div className="nm">{speaker.shortZh}</div>
+                  <div className="nm-en">{speaker.nameEn}</div>
+                </div>
+              </>
+            ) : (
+              <span className="stage-empty">尚无发言代表</span>
+            )}
           </div>
         </div>
 
-        <aside className="stage-context">
+        <div className="clock-wrap">
+          <div className={`clock num ${clockClass}`}>{formatClock(remaining)}</div>
+          <div className="clock-sub">
+            {timer.extendedMs > 0 && `已加时 ${Math.round(timer.extendedMs / 1000)}s · `}
+            本轮 {Math.round(timer.durationMs / 1000)}s
+            {timer.status === 'running' && remaining > 0 && remaining <= warnMs
+              ? ` · 剩余不足 ${ruleset.warningSec} 秒`
+              : ''}
+          </div>
+          <div className="bar">
+            <i className={barClass} style={{ width: `${Math.min(100, Math.max(0, ratio * 100))}%` }} />
+          </div>
+        </div>
+
+        <div className="stage-stats">
           <div className={`ctx-card ${quorum.quorumMet ? 'ok' : 'bad'}`}>
             <div className="ctx-k">法定人数 · Quorum</div>
             <div className="ctx-v num">
@@ -216,7 +196,25 @@ export function StagePanel({
               <div className="ctx-v num sm">{quorum.twoThirds}</div>
             </div>
           </div>
-        </aside>
+        </div>
+
+        <div className="stage-controls">
+          <button className="primary" onClick={handlePrimary} disabled={closed}>
+            {primaryLabel}
+          </button>
+          <button onClick={onReset} disabled={closed || timer.status === 'idle'}>
+            重置
+          </button>
+          <button onClick={() => onExtend(15)} disabled={closed}>
+            +15s
+          </button>
+          <button onClick={() => onExtend(30)} disabled={closed}>
+            +30s
+          </button>
+          <button onClick={onExpire} disabled={closed || timer.status !== 'running'}>
+            结束
+          </button>
+        </div>
 
         <div className="stage-foot">
           <div className="yield-row">

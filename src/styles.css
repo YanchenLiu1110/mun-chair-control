@@ -404,27 +404,27 @@ select:focus {
   min-height: 0;
 }
 
-/* 讲台分栏：左侧大时钟，右侧上下文信息，消除中间留白 */
-.stage-split {
-  flex-direction: row;
-  flex-wrap: wrap;
-  gap: 14px;
-}
-.stage-main {
-  flex: 1 1 320px;
-  min-width: 280px;
+/* 讲台纵向填充：时钟占主区，下方上下文卡片铺开竖向留白 */
+.stage {
   display: flex;
   flex-direction: column;
+  height: 100%;
   min-height: 0;
 }
-.stage-context {
-  flex: 0 0 210px;
-  width: 210px;
+.stage-stats {
   display: flex;
-  flex-direction: column;
+  flex-wrap: wrap;
   gap: 10px;
-  overflow-y: auto;
-  padding-right: 2px;
+  flex: 0 0 auto;
+  padding: 2px 4px 0;
+}
+.stage-stats .ctx-card {
+  flex: 1 1 150px;
+  min-width: 130px;
+}
+.stage-stats .ctx-grid {
+  flex: 1 1 150px;
+  min-width: 130px;
 }
 .ctx-card {
   background: var(--panel-2);
@@ -488,6 +488,8 @@ select:focus {
 .ctx-grid .ctx-card {
   align-items: center;
   text-align: center;
+  flex: none;
+  min-width: 0;
 }
 
 .stage-top {
